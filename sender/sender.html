@@ -1,0 +1,127 @@
+<html data-cast-api-enabled="true">
+<head>
+	<title>Chromecast Sender</title>
+	<script src="http://code.jquery.com/jquery-2.0.3.min.js"></script>
+	<script>
+	
+	//Jquery Init
+	$(function(){
+		$("#receivers").html('Initializing...');
+		$("#playBtn").bind("click", doPlay);
+		$("#pauseBtn").bind("click", doPause);
+		$("#resumeBtn").bind("click", doResume);
+		$("#stopBtn").bind("click", doStop);
+	});
+
+	var cast_api, cv_activity;
+	var receiverList = {};
+
+	// Wait for API to post a message to us
+	window.addEventListener("message", function(event) {
+	  if (event.source == window && event.data && 
+	      event.data.source == "CastApi" &&
+	      event.data.event == "Hello")
+	    initializeApi();
+	});
+
+	initializeApi = function() {
+						cast_api = new cast.Api();
+						cast_api.addReceiverListener("YouTube", onReceiverList);
+						};
+
+	// When list of receivers is sent to us
+	onReceiverList = function(list) {
+						  // If the list is non-empty, show a widget with
+						  // the friendly names of receivers.
+						  // When a receiver is picked, invoke doLaunch with the receiver.
+						  console.log(list);
+
+						  //Clear the List
+						  if (list.length > 0 ) {
+						  	$("#receivers").empty();
+						  	$.each(list, function(index, receiver){
+						  		receiverList[receiver.id] = receiver;
+						  		$device = $("<input type='radio' name='device-to-play' data-receiver-id=" +receiver.id+">"+receiver.name+"</li>");
+						  		$("#receivers").append($device);
+						  	});
+						  } else {
+						  	$("#receivers").html("Opps No Cast device was found in the network.");
+						  }
+
+						};
+
+	// Calling the Cast Device
+	doLaunch = function(receiver, videoId) {
+					var request = new cast.LaunchRequest("YouTube", receiver);
+					request.parameters = "v="+videoId;
+					request.description = new cast.LaunchDescription();
+					request.description.text = "Playing Via Sender App";
+					cast_api.launch(request, onLaunch);
+				}
+
+	// Called when cast launches the app
+	onLaunch = function(activity) {
+					if (activity.status == "running") {
+						cv_activity = activity;
+						$("#status").html("On Air");
+					} else {
+						$("#status").html("Idle");
+					}
+				}
+
+	doPlay = function() {
+					$("#status").html("Starting...");
+					var receiverId = $("input[name=device-to-play]:radio:checked").data("receiverId");
+					var videoId = $("input[name=video-to-play]:radio:checked").data("videoId");
+					console.log( "Will Play v="+ videoId + " on: " + receiverId);
+					doLaunch(receiverList[receiverId], videoId);
+				}
+
+	doPause = function() {
+					cast_api.pauseMedia(cv_activity.activityId, onPause);
+				}
+
+	onPause = function(mediaResult) {
+					if (mediaResult.success)
+					   $("#status").html("Paused");
+				}
+
+	doResume = function() {
+					cast_api.playMedia(cv_activity.activityId, new cast.MediaPlayRequest(), onResume);
+				}
+
+	onResume = function(mediaResult) {
+					if (mediaResult.sucess)
+						$("#status").html("On Air");
+				}
+
+	doStop = function() {
+					cast_api.stopActivity(cv_activity.activityId, onStop);
+				}
+
+	onStop = function(mediaResult) {
+					$("#status").html(mediaResult.status);
+				}
+
+	</script>
+</head>
+<body>
+	<h3>Chromecast sample App</h3>
+	<div id="status">Idle</div>
+
+	<div id="receivers"></div>
+
+	<h3>Content To Play on Cast</h3>
+	<label>
+		<input type="radio" name="video-to-play" data-video-id="Tp9VA71eBew"/> <img src="http://i1.ytimg.com/vi/Tp9VA71eBew/mqdefault.jpg"/>
+	</label>
+	<label>
+		<input type="radio" name="video-to-play" data-video-id="j8lScHO2mM0"/> <img alt="Thumbnail" src="//i1.ytimg.com/vi/j8lScHO2mM0/mqdefault.jpg"/>
+	</label>
+
+	<button id="playBtn">Play</button>
+	<button id="pauseBtn">Pause</button>
+	<button id="resumeBtn">Resume</button>
+	<button id="stopBtn">Stop</button>
+</body>
+</html>
