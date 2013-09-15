@@ -1,7 +1,28 @@
 <html>
-	<head>
-	</head>
+	
+	<script src="https://www.gstatic.com/cast/js/receiver/1.0/cast_receiver.js"></script>
+	<script type="text/javascript">
+
+	var receiver = new cast.receiver.Receiver(
+	    '1a15c123-a08c-4e9f-8604-40d0b2c72fb9_1', [cast.receiver.RemoteMedia.NAMESPACE], "", 5);
+	var remoteMedia = new cast.receiver.RemoteMedia();
+	remoteMedia.addChannelFactory(
+	    receiver.createChannelFactory(cast.receiver.RemoteMedia.NAMESPACE));
+
+	receiver.start();
+
+	window.addEventListener('load', function() {
+	  var elem = document.getElementById('music-player');
+	  remoteMedia.setMediaElement(elem);
+	});
+
+	</script>
+
 	<body>
-	   I am working.
+		<img src="logo.png"/>
+  		<audio autoplay id="music-player">
+  			<source src="test.mp3" type="audio/mpeg">
+  		</audio>
 	</body>
+
 </html>
